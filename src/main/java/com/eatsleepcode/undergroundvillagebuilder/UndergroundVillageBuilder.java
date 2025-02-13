@@ -11,10 +11,16 @@ import cn.nukkit.Player;
 import cn.nukkit.block.Block;
 import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
+import cn.nukkit.entity.passive.EntityVillager;
 import cn.nukkit.plugin.PluginBase;
 import cn.nukkit.utils.TextFormat;
 import cn.nukkit.level.Level;
+import cn.nukkit.level.Position;
 import cn.nukkit.math.Vector3;
+import cn.nukkit.nbt.tag.CompoundTag;
+import cn.nukkit.nbt.tag.DoubleTag;
+import cn.nukkit.nbt.tag.FloatTag;
+import cn.nukkit.nbt.tag.ListTag;
 
 import java.io.*;
 import org.json.*;
@@ -122,8 +128,20 @@ public class UndergroundVillageBuilder extends PluginBase {
 		for (int y = 0; y < structure.size(); y++) {
 			for (int z = 0; z < structure.get(y).size(); z++) {
 				for (int x = 0; x < structure.get(y).get(z).size(); x++) {
-					Block blockToSet = getBlockWithAdjustments(player, structure.get(y).get(z).get(x), direction);
+					String structureItem = structure.get(y).get(z).get(x);
+					Block blockToSet;
+					if (structureItem.startsWith("Block.")) {
+						blockToSet = getBlockWithAdjustments(player, structureItem, direction);
+					}
+					else 
+					{
+						blockToSet = getBlockWithAdjustments(player, "Block.AIR", direction);
+					}
 					level.setBlock(new Vector3(baseX + x, baseY + y, baseZ + z), blockToSet, true, true);
+
+					if (structureItem.startsWith("Villager")) {
+						spawnVillager(level, new Vector3(baseX + x, baseY + y, baseZ + z), structureItem);
+					}
 				}
 			}
 		}
@@ -312,8 +330,14 @@ public class UndergroundVillageBuilder extends PluginBase {
 
 	public static int getBlockIdFromName(Player player, String blockName) {
         try {
-            Field field = Block.class.getField(blockName.toUpperCase());
-            return field.getInt(null);  
+			if (blockName.trim().equals("")) {
+				return Block.AIR;
+			}
+			else {
+				Field field = Block.class.getField(blockName.toUpperCase());
+            	return field.getInt(null);  
+			}
+            
         } catch (NoSuchFieldException | IllegalAccessException e) {
             player.sendMessage(TextFormat.YELLOW + "Can not find the ID for " + blockName + ".");
             return Block.AIR; 
@@ -354,5 +378,47 @@ public class UndergroundVillageBuilder extends PluginBase {
 			return "east";
 		}
 	}
+
+
+
+	
+
+	public void spawnVillager(Level level, Vector3 position, String professionName) {
+		// Convert profession name to ID using a switch statement
+		professionName = professionName.replace("Villager.", "");
+		int profession;
+		switch (professionName.toLowerCase()) {
+			case "farmer": profession = 0; break;
+			case "librarian": profession = 1; break;
+			case "priest": profession = 2; break;
+			case "blacksmith": profession = 3; break;
+			case "butcher": profession = 4; break;
+			case "nitwit": profession = 5; break;
+			default: profession = 5; // Default to Nitwit if unknown
+		}
+	
+		// Create the NBT data for the villager
+		CompoundTag nbt = new CompoundTag()
+			.putList(new ListTag<DoubleTag>("Pos")
+				.add(new DoubleTag("", position.x))
+				.add(new DoubleTag("", position.y))
+				.add(new DoubleTag("", position.z)))
+			.putList(new ListTag<DoubleTag>("Motion")
+				.add(new DoubleTag("", 0.0))
+				.add(new DoubleTag("", 0.0))
+				.add(new DoubleTag("", 0.0)))
+			.putList(new ListTag<FloatTag>("Rotation")
+				.add(new FloatTag("", 0.0f)) // Default yaw
+				.add(new FloatTag("", 0.0f))) // Default pitch
+			.putString("CustomName", "Villager")
+			.putBoolean("CustomNameVisible", false)
+			.putInt("Profession", profession)
+			.putBoolean("NoAI", false); // Set to true to prevent movement
+	
+		// Spawn the villager
+		EntityVillager villager = new EntityVillager(level.getChunk((int) position.x >> 4, (int) position.z >> 4), nbt);
+		villager.spawnToAll();
+	}
+
 }
 
