@@ -588,6 +588,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 		if (entity instanceof EntityAnimal) {
 			entity.spawnToAll();
 			level.addEntity(entity);
+		} else {
+			System.out.println("Failed to spawn " + animalType);
 		}
 	}
 
