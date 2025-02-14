@@ -100,6 +100,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 		return false;
 	}
 
+
+
 	private void ensureDefaultLayoutFile() {
 		File dir = new File(pluginPath);
 		if (!dir.exists()) {
@@ -122,6 +124,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 			}
 		}
 	}
+
+
 
 	public void build(Level level, Player player, Vector3 start, String direction, int depth) {
 		int baseX = player.getFloorX();
@@ -155,14 +159,15 @@ public class UndergroundVillageBuilder extends PluginBase {
 					if (structureItem.startsWith("Villager")) {
 						spawnVillager(level, new Vector3(baseX + x, baseY + y, baseZ + z), structureItem);
 					}
-
-					if (structureItem.startsWith("Animal")) {
+					else if (structureItem.startsWith("Animal")) {
 						spawnAnimal(level, new Vector3(baseX + x, baseY + y, baseZ + z), structureItem);
 					}
 				}
 			}
 		}
 	}
+
+
 
 	private File findLayoutFile() {
 		for (String path : FILE_PATHS) {
@@ -173,6 +178,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 		}
 		return null;
 	}
+
+
 
 	private List<List<List<String>>> parseStructureFile(Player player, File file) {
 		try {
@@ -188,6 +195,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 		}
 		return null;
 	}
+
+
 
 	private List<List<List<String>>> parseJson(File file) throws IOException {
 		String content = new String(Files.readAllBytes(Paths.get(file.getPath())));
@@ -209,6 +218,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 		return structure;
 	}
 
+
+
 	private List<List<List<String>>> parseCsv(File file) throws IOException {
 		List<List<List<String>>> structure = new ArrayList<>();
 		try (BufferedReader br = new BufferedReader(new FileReader(file))) {
@@ -229,6 +240,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 		return structure;
 	}
 
+
+
 	private List<List<List<String>>> parseXlsx(File file) throws IOException {
 		List<List<List<String>>> structure = new ArrayList<>();
 		try (FileInputStream fis = new FileInputStream(file); Workbook workbook = new XSSFWorkbook(fis)) {
@@ -246,6 +259,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 		}
 		return structure;
 	}
+
+
 
 	private Block getBlockWithAdjustments(Player player, String blockName, String direction) {
 		// This method deals with items that require meta, setDamage, or uncovered
@@ -335,6 +350,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 
 	}
 
+
+
 	public static int getBlockIdFromName(Player player, String blockName) {
 		try {
 			if (blockName.trim().equals("")) {
@@ -350,6 +367,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 		}
 	}
 
+
+
 	private Vector3 transformCoordinates(Vector3 start, int x, int z, int y, String direction) {
 		// Adjust coordinates based on player direction
 		switch (direction) {
@@ -363,6 +382,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 				return new Vector3(start.x + x, y, start.z + z); // Default to south
 		}
 	}
+
+
 
 	private String getPlayerDirection(Player player) {
 		float yaw = (float) player.getYaw(); // Cast to float for Nukkit
@@ -381,6 +402,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 			return "east";
 		}
 	}
+
+
 
 	public void spawnVillager(Level level, Vector3 position, String professionName) {
 		// Convert profession name to ID using a switch statement
@@ -427,10 +450,11 @@ public class UndergroundVillageBuilder extends PluginBase {
 				.putInt("Profession", profession)
 				.putBoolean("NoAI", false); // Set to true to prevent movement
 
-		// Spawn the villager
 		EntityVillager villager = new EntityVillager(level.getChunk((int) position.x >> 4, (int) position.z >> 4), nbt);
 		villager.spawnToAll();
 	}
+
+
 
 	public void spawnAnimal(Level level, Vector3 position, String animalType) {
 		animalType = animalType.replace("Animal.", "");
@@ -498,7 +522,6 @@ public class UndergroundVillageBuilder extends PluginBase {
 			default:
 				return; 
 		}
-
 		// Create the NBT data for the animal
 		CompoundTag nbt = new CompoundTag()
 				.putList(new ListTag<DoubleTag>("Pos")
@@ -512,6 +535,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 				.putList(new ListTag<FloatTag>("Rotation")
 						.add(new FloatTag("", 0.0f)) // Default yaw
 						.add(new FloatTag("", 0.0f))) // Default pitch
+				.putString("CustomName", "Animal")
+				.putBoolean("CustomNameVisible", false)
 				.putBoolean("NoAI", false); // Set to true to prevent movement
 
 		// Special case for horses: set a random color
@@ -554,16 +579,15 @@ public class UndergroundVillageBuilder extends PluginBase {
 					nbt.putInt("Variant", 2);
 					break;
 				case "tropical_fish":
+				case "tropicalfish":
 					nbt.putInt("Variant", 3);
 					break;
 			}
 		}
-
-		// Spawn the entity
-		Entity entity = Entity.createEntity(entityClass.getSimpleName(),
-				level.getChunk((int) position.x >> 4, (int) position.z >> 4), nbt);
+		Entity entity = Entity.createEntity(entityClass.getSimpleName(), level.getChunk((int) position.x >> 4, (int) position.z >> 4), nbt);
 		if (entity instanceof EntityAnimal) {
 			entity.spawnToAll();
+			level.addEntity(entity);
 		}
 	}
 
