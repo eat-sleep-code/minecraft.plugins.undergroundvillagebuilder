@@ -461,6 +461,8 @@ public class UndergroundVillageBuilder extends PluginBase {
 
 
 	public void spawnAnimal(Level level, Vector3 position, String animalType) {
+		animalType = animalType.replace("Animal.", "");
+
 		int chunkX = (int) position.x >> 4;
 		int chunkZ = (int) position.z >> 4;
 
