@@ -288,46 +288,20 @@ public class UndergroundVillageBuilder extends PluginBase {
 		int blockID = Block.AIR;
 		int blockDamage = 0;
 		switch (blockName.toLowerCase()) {
-			case "bed.white.head":
-				blockID = 355;
-				switch (direction) {
-					case "north":
-						blockDamage = 0;
-						break;
-					case "west":
-						blockDamage = 0;
-						break;
-					case "south":
-						blockDamage = 0;
-						break;
-					case "east":
-						blockDamage = 0;
-						break;
-				}
+			case "bed_block.foot":
+				blockID = Block.BED_BLOCK;
+				blockDamage = 0;
 				break;
-			case "bed.white.foot":
-				blockID = 355;
-				switch (direction) {
-					case "north":
-						blockDamage = 8;
-						break;
-					case "west":
-						blockDamage = 8;
-						break;
-					case "south":
-						blockDamage = 8;
-						break;
-					case "east":
-						blockDamage = 8;
-						break;
-				}
+			case "bed_block.head":
+				blockID = Block.BED_BLOCK;
+				blockDamage = 8;
 				break;
 			case "dirt_path":
 				blockID = 198;
 				break;
-			case "wooden_door_block":
-				blockID = Block.WOODEN_DOOR_BLOCK;
-				blockDamage = 0;
+			case "farmland":
+				blockID = Block.FARMLAND;
+				blockDamage = 7;
 				break;
 			case "planks.oak":
 				blockID = 5;
@@ -353,9 +327,13 @@ public class UndergroundVillageBuilder extends PluginBase {
 				blockID = 5;
 				blockDamage = 5;
 				break;
-			case "farmland":
-				blockID = Block.FARMLAND;
-				blockDamage = 7;
+			case "wooden_door_block.lower":
+				blockID = Block.WOODEN_DOOR_BLOCK;
+				blockDamage = 0;
+				break;
+			case "wooden_door_block.upper":
+				blockID = Block.WOODEN_DOOR_BLOCK;
+				blockDamage = 8;
 				break;
 			default:
 				blockID = getBlockIdFromName(player, blockName);
