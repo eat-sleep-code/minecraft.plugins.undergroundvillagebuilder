@@ -10,6 +10,10 @@ import java.lang.reflect.Field;
 
 import cn.nukkit.Player;
 import cn.nukkit.block.Block;
+import cn.nukkit.block.BlockChest;
+import cn.nukkit.block.BlockID;
+import cn.nukkit.blockentity.BlockEntity;
+import cn.nukkit.blockentity.BlockEntityChest;
 import cn.nukkit.command.Command;
 import cn.nukkit.command.CommandSender;
 import cn.nukkit.entity.Entity;
@@ -35,14 +39,19 @@ import cn.nukkit.entity.passive.EntityTropicalFish;
 import cn.nukkit.entity.passive.EntityTurtle;
 import cn.nukkit.entity.passive.EntityVillager;
 import cn.nukkit.entity.passive.EntityWolf;
+import cn.nukkit.inventory.Inventory;
+import cn.nukkit.item.Item;
+import cn.nukkit.item.ItemID;
 import cn.nukkit.plugin.PluginBase;
 import cn.nukkit.utils.TextFormat;
 import cn.nukkit.level.Level;
+import cn.nukkit.math.BlockFace;
 import cn.nukkit.math.Vector3;
 import cn.nukkit.nbt.tag.CompoundTag;
 import cn.nukkit.nbt.tag.DoubleTag;
 import cn.nukkit.nbt.tag.FloatTag;
 import cn.nukkit.nbt.tag.ListTag;
+
 
 import java.io.*;
 import org.json.*;
@@ -153,13 +162,21 @@ public class UndergroundVillageBuilder extends PluginBase {
 				for (int x = 0; x < structure.get(y).get(z).size(); x++) {
 					String structureItem = structure.get(y).get(z).get(x);
 					Block blockToSet;
-					if (structureItem.startsWith("Block.")) {
-						blockToSet = getBlockWithAdjustments(player, structureItem, direction);
-					} else {
-						blockToSet = getBlockWithAdjustments(player, "Block.AIR", direction);
+					if (structureItem.equals("Block.Chest")){
+						spawnChestWithLoot(level, new Vector3(baseX + x, baseY + y, baseZ + z));
 					}
-					level.setBlock(new Vector3(baseX + x, baseY + y, baseZ + z), blockToSet, true, true);
-
+					else if (structureItem.equals("Block.Bell")){
+						placeWallMountedBell(level, new Vector3(baseX + x, baseY + y, baseZ + z));
+					}
+					else if (structureItem.startsWith("Block.")) {
+						blockToSet = getBlockWithAdjustments(player, structureItem, direction);
+						level.setBlock(new Vector3(baseX + x, baseY + y, baseZ + z), blockToSet, true, true);
+					} 
+					else {
+						blockToSet = getBlockWithAdjustments(player, "Block.AIR", direction);
+						level.setBlock(new Vector3(baseX + x, baseY + y, baseZ + z), blockToSet, true, true);
+					}
+					
 					if (structureItem.startsWith("Villager")) {
 						spawnVillager(level, new Vector3(baseX + x, baseY + y, baseZ + z), structureItem);
 					}
@@ -310,11 +327,9 @@ public class UndergroundVillageBuilder extends PluginBase {
 			case "DIRT_PATH":
 				blockID = 198;
 				break;
-			case "DOOR.OAK.TOP":
-				blockID = 64;
-				break;
-			case "DOOR.OAK.BOTTOM":
-				blockID = 64;
+			case "WOODEN_DOOR_BLOCK":
+				blockID = Block.WOODEN_DOOR_BLOCK;
+				blockDamage = 0;
 				break;
 			case "PLANKS.OAK":
 				blockID = 5;
@@ -409,6 +424,85 @@ public class UndergroundVillageBuilder extends PluginBase {
 
 
 
+	private BlockFace getItemFacingDirection(Level level, Vector3 position) {
+		if (!level.getBlock(position.north()).isSolid()) return BlockFace.NORTH;
+		if (!level.getBlock(position.south()).isSolid()) return BlockFace.SOUTH;
+		if (!level.getBlock(position.west()).isSolid()) return BlockFace.WEST;
+		if (!level.getBlock(position.east()).isSolid()) return BlockFace.EAST;
+		return BlockFace.NORTH; // Default if all sides are blocked
+	}
+
+
+
+	private int getItemFacingDamage(BlockFace face) {
+		switch (face) {
+			case NORTH: return 2;
+			case SOUTH: return 3;
+			case WEST: return 4;
+			case EAST: return 5;
+			default: return 2; // Default to north
+		}
+	}
+
+
+
+	public void spawnChestWithLoot(Level level, Vector3 position) {
+		// Place the chest block
+		BlockChest chest = (BlockChest) Block.get(BlockID.CHEST);
+		
+		// Determine facing direction (opposite of the wall)
+		BlockFace facing = getItemFacingDirection(level, position);
+		chest.setDamage(getItemFacingDamage(facing)); // Set correct facing direction
+
+		level.setBlock(position, chest, true, true);
+
+		// Create NBT data for the chest
+		CompoundTag nbt = new CompoundTag()
+			.putString("id", "Chest")
+			.putInt("x", position.getFloorX())
+			.putInt("y", position.getFloorY())
+			.putInt("z", position.getFloorZ());
+
+		// Create or retrieve the chest tile entity
+		BlockEntity tile = level.getBlockEntity(position);
+		if (tile == null) {
+			tile = BlockEntity.createBlockEntity(BlockEntity.CHEST, level.getChunk(position.getFloorX() >> 4, position.getFloorZ() >> 4), nbt);
+		}
+
+		if (tile instanceof BlockEntityChest) {
+			BlockEntityChest chestEntity = (BlockEntityChest) tile;
+			Inventory inventory = chestEntity.getInventory();
+
+			// Add items to the chest
+			inventory.setItem(0, Item.get(ItemID.NETHERITE_PICKAXE));
+			inventory.setItem(1, Item.get(ItemID.NETHERITE_HOE));
+			inventory.setItem(2, Item.get(ItemID.BREAD));
+			inventory.setItem(3, Item.get(ItemID.POTATO));
+		}
+	}
+
+
+	
+	public void placeWallMountedBell(Level level, Vector3 position) {
+		BlockFace wallFace = getItemFacingDirection(level, position);
+	
+		if (wallFace == null) {
+			System.out.println("No suitable wall found for the bell at " + position);
+			return;
+		}
+	
+		// Determine the correct block position for the bell
+		Vector3 bellPosition = position.getSide(wallFace);
+		
+		// Create and place the bell block with the correct damage value
+		Block bell = Block.get(BlockID.BELL);
+		bell.setDamage(getItemFacingDamage(wallFace)); // Set orientation
+	
+		level.setBlock(bellPosition, bell, true, true);
+	}
+
+
+
 	public void spawnVillager(Level level, Vector3 position, String professionName) {
 		// Convert profession name to ID using a switch statement
 		professionName = professionName.replace("Villager.", "");
@@ -449,7 +543,7 @@ public class UndergroundVillageBuilder extends PluginBase {
 				.putList(new ListTag<FloatTag>("Rotation")
 						.add(new FloatTag("", 0.0f)) // Default yaw
 						.add(new FloatTag("", 0.0f))) // Default pitch
-				.putString("CustomName", "Villager")
+				.putString("CustomName", professionName)
 				.putBoolean("CustomNameVisible", false)
 				.putInt("Profession", profession)
 				.putBoolean("NoAI", false); // Set to true to prevent movement
@@ -483,7 +577,10 @@ public class UndergroundVillageBuilder extends PluginBase {
 				.add(new DoubleTag("", 0.0)))
 			.putList(new ListTag<FloatTag>("Rotation")
 				.add(new FloatTag("", 0.0f)) // Default yaw
-				.add(new FloatTag("", 0.0f))); // Default pitch
+				.add(new FloatTag("", 0.0f))) // Default pitch
+			.putString("CustomName", animalType)
+			.putBoolean("CustomNameVisible", false)
+			.putBoolean("NoAI", false);
 
 		// Declare entity variable
 		Entity entity = null;
@@ -496,6 +593,7 @@ public class UndergroundVillageBuilder extends PluginBase {
 				break;
 			case "sheep":
 				entity = new EntitySheep(level.getChunk(chunkX, chunkZ), nbt);
+				((EntitySheep) entity).setColor((byte) new Random().nextInt(16)); // Random wool color
 				break;
 			case "pig":
 				entity = new EntityPig(level.getChunk(chunkX, chunkZ), nbt);
@@ -539,6 +637,7 @@ public class UndergroundVillageBuilder extends PluginBase {
 
 		if (entity != null) {
 			level.addEntity(entity);
+			entity.spawnToAll();
 			System.out.println("Successfully spawned " + animalType + " at " + position);
 		}
 }
