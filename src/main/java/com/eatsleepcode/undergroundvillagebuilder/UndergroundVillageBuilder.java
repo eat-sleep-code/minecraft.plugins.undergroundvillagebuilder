@@ -162,13 +162,13 @@ public class UndergroundVillageBuilder extends PluginBase {
 				for (int x = 0; x < structure.get(y).get(z).size(); x++) {
 					String structureItem = structure.get(y).get(z).get(x);
 					Block blockToSet;
-					if (structureItem.equals("Block.Chest")){
+					if (structureItem.toLowerCase().equals("block.chest")){
 						spawnChestWithLoot(level, new Vector3(baseX + x, baseY + y, baseZ + z));
 					}
-					else if (structureItem.equals("Block.Bell")){
+					else if (structureItem.toLowerCase().equals("block.bell")){
 						placeWallMountedBell(level, new Vector3(baseX + x, baseY + y, baseZ + z));
 					}
-					else if (structureItem.startsWith("Block.")) {
+					else if (structureItem.toLowerCase().startsWith("block.")) {
 						blockToSet = getBlockWithAdjustments(player, structureItem, direction);
 						level.setBlock(new Vector3(baseX + x, baseY + y, baseZ + z), blockToSet, true, true);
 					} 
@@ -177,10 +177,10 @@ public class UndergroundVillageBuilder extends PluginBase {
 						level.setBlock(new Vector3(baseX + x, baseY + y, baseZ + z), blockToSet, true, true);
 					}
 					
-					if (structureItem.startsWith("Villager")) {
+					if (structureItem.toLowerCase().startsWith("villager.")) {
 						spawnVillager(level, new Vector3(baseX + x, baseY + y, baseZ + z), structureItem);
 					}
-					else if (structureItem.startsWith("Animal")) {
+					else if (structureItem.toLowerCase().startsWith("animal.")) {
 						spawnAnimal(level, new Vector3(baseX + x, baseY + y, baseZ + z), structureItem);
 					}
 				}
@@ -284,13 +284,11 @@ public class UndergroundVillageBuilder extends PluginBase {
 
 
 	private Block getBlockWithAdjustments(Player player, String blockName, String direction) {
-		// This method deals with items that require meta, setDamage, or uncovered
-		// assets
 		blockName = blockName.replace("Block.", "");
 		int blockID = Block.AIR;
 		int blockDamage = 0;
-		switch (blockName) {
-			case "BED.WHITE.HEAD":
+		switch (blockName.toLowerCase()) {
+			case "bed.white.head":
 				blockID = 355;
 				switch (direction) {
 					case "north":
@@ -307,7 +305,7 @@ public class UndergroundVillageBuilder extends PluginBase {
 						break;
 				}
 				break;
-			case "BED.WHITE.FOOT":
+			case "bed.white.foot":
 				blockID = 355;
 				switch (direction) {
 					case "north":
@@ -324,38 +322,38 @@ public class UndergroundVillageBuilder extends PluginBase {
 						break;
 				}
 				break;
-			case "DIRT_PATH":
+			case "dirt_path":
 				blockID = 198;
 				break;
-			case "WOODEN_DOOR_BLOCK":
+			case "wooden_door_block":
 				blockID = Block.WOODEN_DOOR_BLOCK;
 				blockDamage = 0;
 				break;
-			case "PLANKS.OAK":
+			case "planks.oak":
 				blockID = 5;
 				blockDamage = 0;
 				break;
-			case "PLANKS.SPRUCE":
+			case "planks.spruce":
 				blockID = 5;
 				blockDamage = 1;
 				break;
-			case "PLANKS.BIRCH":
+			case "planks.birch":
 				blockID = 5;
 				blockDamage = 2;
 				break;
-			case "PLANKS.JUNGLE":
+			case "planks.jungle":
 				blockID = 5;
 				blockDamage = 3;
 				break;
-			case "PLANKS.ACACIA":
+			case "planks.acacia":
 				blockID = 5;
 				blockDamage = 4;
 				break;
-			case "PLANKS.DARK_OAK":
+			case "planks.dark_oak":
 				blockID = 5;
 				blockDamage = 5;
 				break;
-			case "FARMLAND":
+			case "farmland":
 				blockID = Block.FARMLAND;
 				blockDamage = 7;
 				break;
@@ -532,21 +530,21 @@ public class UndergroundVillageBuilder extends PluginBase {
 
 		// Create the NBT data for the villager
 		CompoundTag nbt = new CompoundTag()
-				.putList(new ListTag<DoubleTag>("Pos")
-						.add(new DoubleTag("", position.x))
-						.add(new DoubleTag("", position.y))
-						.add(new DoubleTag("", position.z)))
-				.putList(new ListTag<DoubleTag>("Motion")
-						.add(new DoubleTag("", 0.0))
-						.add(new DoubleTag("", 0.0))
-						.add(new DoubleTag("", 0.0)))
-				.putList(new ListTag<FloatTag>("Rotation")
-						.add(new FloatTag("", 0.0f)) // Default yaw
-						.add(new FloatTag("", 0.0f))) // Default pitch
-				.putString("CustomName", professionName)
-				.putBoolean("CustomNameVisible", false)
-				.putInt("Profession", profession)
-				.putBoolean("NoAI", false); // Set to true to prevent movement
+			.putList(new ListTag<DoubleTag>("Pos")
+					.add(new DoubleTag("", position.x))
+					.add(new DoubleTag("", position.y))
+					.add(new DoubleTag("", position.z)))
+			.putList(new ListTag<DoubleTag>("Motion")
+					.add(new DoubleTag("", 0.0))
+					.add(new DoubleTag("", 0.0))
+					.add(new DoubleTag("", 0.0)))
+			.putList(new ListTag<FloatTag>("Rotation")
+					.add(new FloatTag("", 0.0f)) // Default yaw
+					.add(new FloatTag("", 0.0f))) // Default pitch
+			.putString("CustomName", professionName)
+			.putBoolean("CustomNameVisible", false)
+			.putInt("Profession", profession)
+			.putBoolean("NoAI", false); // Set to true to prevent movement
 
 		EntityVillager villager = new EntityVillager(level.getChunk((int) position.x >> 4, (int) position.z >> 4), nbt);
 		villager.spawnToAll();
@@ -592,8 +590,10 @@ public class UndergroundVillageBuilder extends PluginBase {
 				entity = new EntityCow(level.getChunk(chunkX, chunkZ), nbt);
 				break;
 			case "sheep":
+				int[] validColors = {0, 7, 15, 12};  // White, Gray, Black, Brown
+				int randomColor = validColors[random.nextInt(validColors.length)];
 				entity = new EntitySheep(level.getChunk(chunkX, chunkZ), nbt);
-				((EntitySheep) entity).setColor((byte) new Random().nextInt(16)); // Random wool color
+				((EntitySheep) entity).setColor((byte) randomColor);
 				break;
 			case "pig":
 				entity = new EntityPig(level.getChunk(chunkX, chunkZ), nbt);
@@ -638,7 +638,7 @@ public class UndergroundVillageBuilder extends PluginBase {
 		if (entity != null) {
 			level.addEntity(entity);
 			entity.spawnToAll();
-			System.out.println("Successfully spawned " + animalType + " at " + position);
+			//System.out.println("Successfully spawned " + animalType + " at " + position);
 		}
 }
 
