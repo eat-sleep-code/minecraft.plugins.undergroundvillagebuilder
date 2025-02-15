@@ -16,6 +16,7 @@ import cn.nukkit.entity.Entity;
 import cn.nukkit.entity.passive.EntityAnimal;
 import cn.nukkit.entity.passive.EntityCat;
 import cn.nukkit.entity.passive.EntityChicken;
+import cn.nukkit.entity.passive.EntityCod;
 import cn.nukkit.entity.passive.EntityCow;
 import cn.nukkit.entity.passive.EntityDolphin;
 import cn.nukkit.entity.passive.EntityFish;
@@ -26,8 +27,11 @@ import cn.nukkit.entity.passive.EntityPanda;
 import cn.nukkit.entity.passive.EntityParrot;
 import cn.nukkit.entity.passive.EntityPig;
 import cn.nukkit.entity.passive.EntityPolarBear;
+import cn.nukkit.entity.passive.EntityPufferfish;
 import cn.nukkit.entity.passive.EntityRabbit;
+import cn.nukkit.entity.passive.EntitySalmon;
 import cn.nukkit.entity.passive.EntitySheep;
+import cn.nukkit.entity.passive.EntityTropicalFish;
 import cn.nukkit.entity.passive.EntityTurtle;
 import cn.nukkit.entity.passive.EntityVillager;
 import cn.nukkit.entity.passive.EntityWolf;
@@ -457,140 +461,84 @@ public class UndergroundVillageBuilder extends PluginBase {
 
 
 	public void spawnAnimal(Level level, Vector3 position, String animalType) {
-		animalType = animalType.replace("Animal.", "");
-		Class<? extends Entity> entityClass;
+		int chunkX = (int) position.x >> 4;
+		int chunkZ = (int) position.z >> 4;
+
+		if (!level.isChunkLoaded(chunkX, chunkZ)) {
+			System.out.println("Chunk not loaded, cannot spawn entity at " + position);
+			return;
+		}
+
+		// Create default NBT
+		CompoundTag nbt = new CompoundTag()
+			.putList(new ListTag<DoubleTag>("Pos")
+				.add(new DoubleTag("", position.x))
+				.add(new DoubleTag("", position.y))
+				.add(new DoubleTag("", position.z)))
+			.putList(new ListTag<DoubleTag>("Motion")
+				.add(new DoubleTag("", 0.0))
+				.add(new DoubleTag("", 0.0))
+				.add(new DoubleTag("", 0.0)))
+			.putList(new ListTag<FloatTag>("Rotation")
+				.add(new FloatTag("", 0.0f)) // Default yaw
+				.add(new FloatTag("", 0.0f))); // Default pitch
+
+		// Declare entity variable
+		Entity entity = null;
+		Random random = new Random();
+
+		// Switch statement to determine entity type
 		switch (animalType.toLowerCase()) {
 			case "cow":
-				entityClass = EntityCow.class;
-				break;
-			case "pig":
-				entityClass = EntityPig.class;
-				break;
-			case "chicken":
-				entityClass = EntityChicken.class;
+				entity = new EntityCow(level.getChunk(chunkX, chunkZ), nbt);
 				break;
 			case "sheep":
-				entityClass = EntitySheep.class;
+				entity = new EntitySheep(level.getChunk(chunkX, chunkZ), nbt);
 				break;
-			case "horse":
-				entityClass = EntityHorse.class;
+			case "pig":
+				entity = new EntityPig(level.getChunk(chunkX, chunkZ), nbt);
+				break;
+			case "chicken":
+				entity = new EntityChicken(level.getChunk(chunkX, chunkZ), nbt);
 				break;
 			case "wolf":
-				entityClass = EntityWolf.class;
+				entity = new EntityWolf(level.getChunk(chunkX, chunkZ), nbt);
 				break;
 			case "fox":
-				entityClass = EntityFox.class;
+				entity = new EntityFox(level.getChunk(chunkX, chunkZ), nbt);
 				break;
 			case "rabbit":
-				entityClass = EntityRabbit.class;
+				entity = new EntityRabbit(level.getChunk(chunkX, chunkZ), nbt);
 				break;
 			case "polar_bear":
-			case "polarbear":
-				entityClass = EntityPolarBear.class;
+				entity = new EntityPolarBear(level.getChunk(chunkX, chunkZ), nbt);
 				break;
-			case "panda":
-				entityClass = EntityPanda.class;
+			case "horse":
+				int horseVariant = random.nextInt(7); // 0-6 are valid horse colors
+				nbt.putInt("Variant", horseVariant);
+				entity = new EntityHorse(level.getChunk(chunkX, chunkZ), nbt);
 				break;
-			case "ocelot":
-				entityClass = EntityOcelot.class;
-				break;
-			case "cat":
-				entityClass = EntityCat.class;
-				break;
-			case "parrot":
-				entityClass = EntityParrot.class;
-				break;
-			case "dolphin":
-				entityClass = EntityDolphin.class;
-				break;
-			case "turtle":
-				entityClass = EntityTurtle.class;
+			case "salmon":
+				entity = new EntitySalmon(level.getChunk(chunkX, chunkZ), nbt);
 				break;
 			case "cod":
-				entityClass = EntityFish.class;
-				break; // Cod
-			case "salmon":
-				entityClass = EntityFish.class;
-				break; // Salmon
+				entity = new EntityCod(level.getChunk(chunkX, chunkZ), nbt);
+				break;
 			case "pufferfish":
-				entityClass = EntityFish.class;
-				break; // Pufferfish
+				entity = new EntityPufferfish(level.getChunk(chunkX, chunkZ), nbt);
+				break;
 			case "tropical_fish":
-			case "tropicalfish":
-				entityClass = EntityFish.class;
-				break; // Tropical Fish
+				entity = new EntityTropicalFish(level.getChunk(chunkX, chunkZ), nbt);
+				break;
 			default:
-				return; 
-		}
-		// Create the NBT data for the animal
-		CompoundTag nbt = new CompoundTag()
-				.putList(new ListTag<DoubleTag>("Pos")
-						.add(new DoubleTag("", position.x))
-						.add(new DoubleTag("", position.y))
-						.add(new DoubleTag("", position.z)))
-				.putList(new ListTag<DoubleTag>("Motion")
-						.add(new DoubleTag("", 0.0))
-						.add(new DoubleTag("", 0.0))
-						.add(new DoubleTag("", 0.0)))
-				.putList(new ListTag<FloatTag>("Rotation")
-						.add(new FloatTag("", 0.0f)) // Default yaw
-						.add(new FloatTag("", 0.0f))) // Default pitch
-				.putString("CustomName", "Animal")
-				.putBoolean("CustomNameVisible", false)
-				.putBoolean("NoAI", false); // Set to true to prevent movement
-
-		// Special case for horses: set a random color
-		if (entityClass == EntityHorse.class) {
-			int[] horseColors = { 0, 1, 2, 3, 4, 5 }; // Possible horse colors
-			int randomColor = horseColors[new Random().nextInt(horseColors.length)];
-			nbt.putInt("Variant", randomColor); // Set horse color
+				System.out.println("Invalid animal type: " + animalType);
+				return;
 		}
 
-		// Special case for foxes: set a random type (red or snow)
-		if (entityClass == EntityFox.class) {
-			nbt.putInt("Type", new Random().nextBoolean() ? 0 : 1); // 0 = Red Fox, 1 = Snow Fox
-		}
-
-		// Special case for pandas: set a random gene type
-		if (entityClass == EntityPanda.class) {
-			int[] pandaGenes = { 0, 1, 2, 3, 4, 5, 6 }; // Different panda personalities
-			int randomGene = pandaGenes[new Random().nextInt(pandaGenes.length)];
-			nbt.putInt("MainGene", randomGene);
-			nbt.putInt("HiddenGene", randomGene);
-		}
-
-		// Special case for rabbits: set a random variant
-		if (entityClass == EntityRabbit.class) {
-			int[] rabbitVariants = { 0, 1, 2, 3, 4, 5, 99 }; // Rabbit types including "killer bunny"
-			int randomVariant = rabbitVariants[new Random().nextInt(rabbitVariants.length)];
-			nbt.putInt("RabbitType", randomVariant);
-		}
-
-		// Special case for fish: differentiate between types
-		if (entityClass == EntityFish.class) {
-			switch (animalType.toLowerCase()) {
-				case "cod":
-					nbt.putInt("Variant", 0);
-					break;
-				case "salmon":
-					nbt.putInt("Variant", 1);
-					break;
-				case "pufferfish":
-					nbt.putInt("Variant", 2);
-					break;
-				case "tropical_fish":
-				case "tropicalfish":
-					nbt.putInt("Variant", 3);
-					break;
-			}
-		}
-		Entity entity = Entity.createEntity(entityClass.getSimpleName(), level.getChunk((int) position.x >> 4, (int) position.z >> 4), nbt);
-		if (entity instanceof EntityAnimal) {
-			entity.spawnToAll();
+		if (entity != null) {
 			level.addEntity(entity);
-		} else {
-			System.out.println("Failed to spawn " + animalType);
+			System.out.println("Successfully spawned " + animalType + " at " + position);
 		}
-	}
+}
 
 }

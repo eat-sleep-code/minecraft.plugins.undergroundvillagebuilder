@@ -1,6 +1,6 @@
 name: UndergroundVillageBuilder
 main: com.eatsleepcode.undergroundvillagebuilder.UndergroundVillageBuilder
-version: 2025.02.13.23
+version: 2025.02.14.18
 api: [1.0.11]
 author: eat-sleep-code
 description: Build a complex underground village.
